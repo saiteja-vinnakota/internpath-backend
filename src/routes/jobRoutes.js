@@ -5,38 +5,27 @@ import {
   getAll,
   getOne,
   update,
-  remove
+  remove,
 } from "../controllers/jobController.js";
 
+import { protect } from "../middleware/authMiddleware.js";
+
+import authorizeRoles from "../middleware/roleMiddleware.js";
+
+import { ROLES } from "../constants/roles.js";
+
 import {
-  protect
-} from "../middleware/authMiddleware.js";
-
-import authorizeRoles
-from "../middleware/roleMiddleware.js";
-
-import {
-  ROLES
-} from "../constants/roles.js";
-
+  validateCreateJob,
+  validateUpdateJob,
+} from "../validators/jobValidator.js";
 
 const router = express.Router();
 
-
-
 // Public Routes
 
-router.get(
-  "/",
-  getAll
-);
+router.get("/", getAll);
 
-router.get(
-  "/:id",
-  getOne
-);
-
-
+router.get("/:id", getOne);
 
 // Recruiter Protected Routes
 
@@ -44,22 +33,12 @@ router.post(
   "/",
   protect,
   authorizeRoles(ROLES.RECRUITER),
-  create
+  validateCreateJob,
+  create,
 );
 
-router.put(
-  "/:id",
-  protect,
-  authorizeRoles(ROLES.RECRUITER),
-  update
-);
+router.put("/:id", protect, authorizeRoles(ROLES.RECRUITER), validateUpdateJob, update);
 
-router.delete(
-  "/:id",
-  protect,
-  authorizeRoles(ROLES.RECRUITER),
-  remove
-);
-
+router.delete("/:id", protect, authorizeRoles(ROLES.RECRUITER), remove);
 
 export default router;

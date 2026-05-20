@@ -10,6 +10,10 @@ import {
   protect
 } from "../middleware/authMiddleware.js";
 
+import {
+  validateRegister,
+  validateLogin
+} from "../validators/authValidator.js";
 
 const router = express.Router();
 
@@ -17,6 +21,7 @@ const router = express.Router();
 // Register User
 router.post(
   "/register",
+  validateRegister,
   register
 );
 
@@ -24,6 +29,7 @@ router.post(
 // Login User
 router.post(
   "/login",
+  validateLogin,
   login
 );
 

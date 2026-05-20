@@ -6,6 +6,9 @@ from "./authRoutes.js";
 import jobRoutes
 from "./jobRoutes.js";
 
+import applicationRoutes
+from "./applicationRoutes.js";
+
 const router = express.Router();
 
 
@@ -18,5 +21,11 @@ router.use(
   "/jobs",
   jobRoutes
 );
+
+router.use(
+  "/applications",
+  applicationRoutes
+);
+
 
 export default router;
