@@ -1,122 +1,74 @@
 import streamifier from "streamifier";
 
-import asyncHandler
-from "../utils/asyncHandler.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
-import User
-from "../models/User.js";
+import User from "../models/User.js";
 
-import cloudinary
-from "../config/cloudinary.js";
+import cloudinary from "../config/cloudinary.js";
 
-import {
-  successResponse
-} from "../utils/responseFormatter.js";
+import { successResponse } from "../utils/responseFormatter.js";
 
-import {
-  parseResume
-} from "../services/resumeParserService.js";
+import { parseResume } from "../services/resumeParserService.js";
 
-
-
+import extractSkills from "../utils/extractSkills.js";
 
 // Upload Resume
-export const uploadResume =
-  asyncHandler(
-    async (req, res) => {
+export const uploadResume = asyncHandler(async (req, res) => {
+  // Check File Exists
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: "Resume PDF is required",
+    });
+  }
 
-      // Check File Exists
-      if (!req.file) {
+  // Parse Resume Text Directly From Buffer
+  const resumeText = await parseResume(req.file.buffer);
 
-        return res.status(400).json({
-          success: false,
-          message:
-            "Resume PDF is required"
-        });
-      }
+  // Upload PDF To Cloudinary
+  const uploadResult = await new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "internpath/resumes",
 
+        resource_type: "raw",
 
-      // Parse Resume Text Directly From Buffer
-      const resumeText =
-        await parseResume(
-          req.file.buffer
-        );
+        format: "pdf",
+      },
 
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      },
+    );
 
-      // Upload PDF To Cloudinary
-      const uploadResult =
-        await new Promise(
-          (resolve, reject) => {
+    streamifier.createReadStream(req.file.buffer).pipe(stream);
+  });
 
-            const stream =
-              cloudinary.uploader.upload_stream(
+  // Cloudinary Resume URL
+  const resumeUrl = uploadResult.secure_url;
 
-                {
-                  folder:
-                    "internpath/resumes",
+  const skills = extractSkills(resumeText);
+  // Update User
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user._id,
 
-                  resource_type:
-                    "raw",
+    {
+      resumeUrl,
+      resumeText,
+      skills,
+      $inc: {
+        resumeVersion: 1,
+      },
+    },
 
-                  format: "pdf"
-                },
+    {
+      new: true,
+    },
+  ).select("-password");
 
-                (
-                  error,
-                  result
-                ) => {
-
-                  if (error) {
-
-                    reject(error);
-
-                  } else {
-
-                    resolve(result);
-                  }
-                }
-              );
-
-
-            streamifier
-              .createReadStream(
-                req.file.buffer
-              )
-              .pipe(stream);
-          }
-        );
-
-
-      // Cloudinary Resume URL
-      const resumeUrl =
-        uploadResult.secure_url;
-
-
-      // Update User
-      const updatedUser =
-        await User.findByIdAndUpdate(
-
-          req.user._id,
-
-          {
-            resumeUrl,
-            resumeText,
-            $inc:{
-              resumeVersion: 1
-            }
-          },
-
-          {
-            new: true
-          }
-        ).select("-password");
-
-
-      successResponse(
-        res,
-        "Resume uploaded successfully",
-        updatedUser,
-        200
-      );
-    }
-  );
+  successResponse(res, "Resume uploaded successfully", updatedUser, 200);
+});

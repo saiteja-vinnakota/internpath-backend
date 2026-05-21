@@ -1,18 +1,14 @@
-import Application
-from "../models/Application.js";
+import Application from "../models/Application.js";
 
-import Job
-from "../models/Job.js";
+import Job from "../models/Job.js";
 
-import MatchCache
-from "../models/MatchCache.js";
+import User from "../models/User.js";
 
-import ErrorResponse
-from "../utils/errorResponse.js";
+import MatchCache from "../models/MatchCache.js";
 
-import {
-  APPLICATION_STATUS
-} from "../constants/applicationStatus.js";
+import ErrorResponse from "../utils/errorResponse.js";
+
+import { createNotification } from "./notificationService.js";
 
 
 
@@ -20,33 +16,66 @@ import {
 // Apply To Job
 export const applyToJob = async (
   studentId,
-  jobId
+  jobId,
 ) => {
 
   // Check Job Exists
-  const job = await Job.findById(jobId);
+  const job =
+    await Job.findById(
+      jobId,
+    );
 
-  if (!job || !job.isActive) {
+
+  if (!job) {
 
     throw new ErrorResponse(
       "Job not found",
-      404
+      404,
     );
   }
 
 
-  // Prevent Duplicate Applications
+  // Check Student Exists
+  const student =
+    await User.findById(
+      studentId,
+    );
+
+
+  if (!student) {
+
+    throw new ErrorResponse(
+      "Student not found",
+      404,
+    );
+  }
+
+
+  // Resume Required
+  if (!student.resumeUrl) {
+
+    throw new ErrorResponse(
+      "Upload resume before applying",
+      400,
+    );
+  }
+
+
+  // Prevent Duplicate Application
   const existingApplication =
     await Application.findOne({
+
       student: studentId,
-      job: jobId
+
+      job: jobId,
     });
+
 
   if (existingApplication) {
 
     throw new ErrorResponse(
-      "You already applied to this job",
-      400
+      "Already applied to this job",
+      400,
     );
   }
 
@@ -54,8 +83,10 @@ export const applyToJob = async (
   // Fetch AI Match Cache
   const matchCache =
     await MatchCache.findOne({
+
       student: studentId,
-      job: jobId
+
+      job: jobId,
     });
 
 
@@ -67,11 +98,14 @@ export const applyToJob = async (
 
       job: jobId,
 
-      status:
-        APPLICATION_STATUS.APPLIED,
+      resumeUrl:
+        student.resumeUrl,
 
-      aiMatchScore:
-        matchCache?.score || null,
+
+
+      // AI Snapshot
+      matchScore:
+        matchCache?.score || 0,
 
       matchedSkills:
         matchCache?.matchedSkills || [],
@@ -80,8 +114,21 @@ export const applyToJob = async (
         matchCache?.missingSkills || [],
 
       aiSuggestion:
-        matchCache?.suggestion || ""
+        matchCache?.suggestion || "",
     });
+
+
+  // Create Student Notification
+  await createNotification(
+
+    studentId,
+
+    `Successfully applied for ${job.title}`,
+
+    "APPLICATION",
+
+    jobId,
+  );
 
 
   return application;
@@ -90,70 +137,70 @@ export const applyToJob = async (
 
 
 
-// Student Applications
+// Get Logged-In Student Applications
 export const getMyApplications =
   async (studentId) => {
 
-    const applications =
-      await Application.find({
-        student: studentId
-      })
-        .populate(
-          "job"
-        )
-        .sort({
-          createdAt: -1
-        });
+    return await Application
+      .find({
 
-    return applications;
+        student: studentId,
+      })
+      .populate("job")
+      .sort({
+        createdAt: -1,
+      });
   };
 
 
 
 
-// Recruiter Gets Applicants
+// Get Applicants For Recruiter Job
 export const getJobApplicants =
-  async (jobId, recruiterId) => {
+  async (
+    jobId,
+    recruiterId,
+  ) => {
 
-    // Verify Recruiter Owns Job
+    // Verify Job Ownership
     const job =
-      await Job.findById(jobId);
+      await Job.findById(
+        jobId,
+      );
+
 
     if (!job) {
 
       throw new ErrorResponse(
         "Job not found",
-        404
+        404,
       );
     }
 
 
     if (
-      job.createdBy.toString() !==
-      recruiterId.toString()
+      job.createdBy.toString()
+      !== recruiterId.toString()
     ) {
 
       throw new ErrorResponse(
         "Not authorized",
-        403
+        403,
       );
     }
 
 
-    // Fetch Applicants
-    const applications =
-      await Application.find({
-        job: jobId
+    return await Application
+      .find({
+        job: jobId,
       })
-        .populate(
-          "student",
-          "name email skills resumeUrl"
-        )
-        .sort({
-          aiMatchScore: -1
-        });
-
-    return applications;
+      .populate(
+        "student",
+        "name email skills resumeUrl",
+      )
+      .sort({
+        matchScore: -1,
+      });
   };
 
 
@@ -164,40 +211,103 @@ export const updateApplicationStatus =
   async (
     applicationId,
     recruiterId,
-    status
+    status,
   ) => {
 
     const application =
-      await Application.findById(
-        applicationId
-      ).populate("job");
+      await Application
+        .findById(
+          applicationId,
+        )
+        .populate("job");
 
 
     if (!application) {
 
       throw new ErrorResponse(
         "Application not found",
-        404
+        404,
       );
     }
 
 
     // Verify Recruiter Owns Job
     if (
-      application.job.createdBy.toString() !==
-      recruiterId.toString()
+      application.job.createdBy.toString()
+      !== recruiterId.toString()
     ) {
 
       throw new ErrorResponse(
         "Not authorized",
-        403
+        403,
       );
     }
 
 
+    // Update Status
     application.status = status;
 
     await application.save();
+
+
+    // Notification Message
+    let message = "";
+
+    let notificationType =
+      "SYSTEM";
+
+
+    if (
+      status === "shortlisted"
+    ) {
+
+      message =
+        `You were shortlisted for ${application.job.title}`;
+
+      notificationType =
+        "SHORTLIST";
+    }
+
+
+    if (
+      status === "rejected"
+    ) {
+
+      message =
+        `Your application was rejected for ${application.job.title}`;
+
+      notificationType =
+        "REJECT";
+    }
+
+
+    if (
+      status === "accepted"
+    ) {
+
+      message =
+        `You were accepted for ${application.job.title}`;
+
+      notificationType =
+        "SYSTEM";
+    }
+
+
+    // Create Notification
+    if (message) {
+
+      await createNotification(
+
+        application.student,
+
+        message,
+
+        notificationType,
+
+        application.job._id,
+      );
+    }
+
 
     return application;
   };

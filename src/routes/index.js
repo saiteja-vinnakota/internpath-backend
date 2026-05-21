@@ -15,6 +15,12 @@ from "./resumeRoutes.js";
 import aiRoutes
 from "./aiRoutes.js";
 
+import notificationRoutes
+from "./notificationRoutes.js";
+
+import savedJobRoutes
+from "./savedJobRoutes.js";
+
 const router = express.Router();
 
 
@@ -41,6 +47,16 @@ router.use(
 router.use(
   "/ai",
   aiRoutes
+);
+
+router.use(
+  "/notifications",
+  notificationRoutes
+);
+
+router.use(
+  "/saved-jobs",
+  savedJobRoutes
 );
 
 export default router;

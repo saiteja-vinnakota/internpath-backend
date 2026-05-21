@@ -5,26 +5,26 @@ import {
 } from "../constants/applicationStatus.js";
 
 
+
+
 const applicationSchema =
   new mongoose.Schema(
     {
 
-      // Student Who Applied
+      // Student
       student: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        required: true,
-        index: true
+        required: true
       },
 
 
 
-      // Job Applied To
+      // Job
       job: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Job",
-        required: true,
-        index: true
+        required: true
       },
 
 
@@ -32,30 +32,32 @@ const applicationSchema =
       // Application Status
       status: {
         type: String,
-
-        enum: [
-          APPLICATION_STATUS.APPLIED,
-          APPLICATION_STATUS.REVIEWING,
-          APPLICATION_STATUS.SHORTLISTED,
-          APPLICATION_STATUS.REJECTED,
-          APPLICATION_STATUS.ACCEPTED
-        ],
-
+        enum: Object.values(
+          APPLICATION_STATUS
+        ),
         default:
           APPLICATION_STATUS.APPLIED
       },
 
 
 
-      // AI Match Score
-      aiMatchScore: {
-        type: Number,
-        default: null
+      // Resume Used During Apply
+      resumeUrl: {
+        type: String,
+        default: ""
       },
 
 
 
-      // Matched Skills
+      // AI Match Score Snapshot
+      matchScore: {
+        type: Number,
+        default: 0
+      },
+
+
+
+      // Matched Skills Snapshot
       matchedSkills: {
         type: [String],
         default: []
@@ -63,7 +65,7 @@ const applicationSchema =
 
 
 
-      // Missing Skills
+      // Missing Skills Snapshot
       missingSkills: {
         type: [String],
         default: []
@@ -71,11 +73,12 @@ const applicationSchema =
 
 
 
-      // AI Suggestion
+      // AI Suggestion Snapshot
       aiSuggestion: {
         type: String,
         default: ""
       }
+
     },
     {
       timestamps: true
@@ -95,6 +98,8 @@ applicationSchema.index(
     unique: true
   }
 );
+
+
 
 
 const Application =
