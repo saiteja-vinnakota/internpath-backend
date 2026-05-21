@@ -100,7 +100,10 @@ export const uploadResume =
 
           {
             resumeUrl,
-            resumeText
+            resumeText,
+            $inc:{
+              resumeVersion: 1
+            }
           },
 
           {

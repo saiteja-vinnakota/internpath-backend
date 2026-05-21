@@ -28,7 +28,9 @@ const matchCacheSchema =
       // AI Match Score
       score: {
         type: Number,
-        required: true
+        required: true,
+        min: 0,
+        max: 100
       },
 
 
@@ -53,7 +55,16 @@ const matchCacheSchema =
       suggestion: {
         type: String,
         default: ""
+      },
+
+
+
+      // Resume Version
+      resumeVersion: {
+        type: Number,
+        default: 1
       }
+
     },
     {
       timestamps: true
@@ -73,6 +84,16 @@ matchCacheSchema.index(
     unique: true
   }
 );
+
+
+
+
+// Faster Recruiter Sorting
+matchCacheSchema.index({
+  score: -1
+});
+
+
 
 
 const MatchCache =

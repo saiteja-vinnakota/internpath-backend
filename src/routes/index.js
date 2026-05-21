@@ -12,6 +12,9 @@ from "./applicationRoutes.js";
 import resumeRoutes
 from "./resumeRoutes.js";
 
+import aiRoutes
+from "./aiRoutes.js";
+
 const router = express.Router();
 
 
@@ -33,6 +36,11 @@ router.use(
 router.use(
   "/resume",
   resumeRoutes
-)
+);
+
+router.use(
+  "/ai",
+  aiRoutes
+);
 
 export default router;
