@@ -9,6 +9,9 @@ from "./jobRoutes.js";
 import applicationRoutes
 from "./applicationRoutes.js";
 
+import resumeRoutes
+from "./resumeRoutes.js";
+
 const router = express.Router();
 
 
@@ -27,5 +30,9 @@ router.use(
   applicationRoutes
 );
 
+router.use(
+  "/resume",
+  resumeRoutes
+)
 
 export default router;
