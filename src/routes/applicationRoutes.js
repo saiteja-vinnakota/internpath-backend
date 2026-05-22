@@ -1,10 +1,12 @@
 import express from "express";
 
 import {
+
   apply,
   getMine,
   getApplicants,
   updateStatus
+
 } from "../controllers/applicationController.js";
 
 import {
@@ -18,20 +20,36 @@ import {
   ROLES
 } from "../constants/roles.js";
 
+import validate
+from "../middleware/validateMiddleware.js";
 
-const router = express.Router();
+import {
+
+  applyJobSchema,
+  updateApplicationStatusSchema
+
+} from "../validators/applicationValidator.js";
+
+
+const router =
+  express.Router();
 
 
 
 
 // Student Applies To Job
 router.post(
+
   "/:jobId",
 
   protect,
 
   authorizeRoles(
     ROLES.STUDENT
+  ),
+
+  validate(
+    applyJobSchema
   ),
 
   apply
@@ -42,6 +60,7 @@ router.post(
 
 // Student Gets Own Applications
 router.get(
+
   "/me",
 
   protect,
@@ -58,12 +77,17 @@ router.get(
 
 // Recruiter Gets Applicants
 router.get(
+
   "/job/:jobId",
 
   protect,
 
   authorizeRoles(
     ROLES.RECRUITER
+  ),
+
+  validate(
+    applyJobSchema
   ),
 
   getApplicants
@@ -74,12 +98,17 @@ router.get(
 
 // Recruiter Updates Status
 router.put(
+
   "/:applicationId/status",
 
   protect,
 
   authorizeRoles(
     ROLES.RECRUITER
+  ),
+
+  validate(
+    updateApplicationStatusSchema
   ),
 
   updateStatus

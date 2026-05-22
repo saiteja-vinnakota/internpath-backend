@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema(
       required: [true, "Name is required"],
       trim: true,
       minlength: 2,
-      maxlength: 50
+      maxlength: 50,
     },
 
     email: {
@@ -19,87 +19,93 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      index: true
+      index: true,
     },
 
     password: {
       type: String,
       required: [true, "Password is required"],
       minlength: 6,
-      select: false
+      select: false,
     },
 
     role: {
       type: String,
-      enum: [
-        ROLES.STUDENT,
-        ROLES.RECRUITER
-      ],
-      default: ROLES.STUDENT
+      enum: [ROLES.STUDENT, ROLES.RECRUITER],
+      default: ROLES.STUDENT,
     },
 
     profilePicture: {
       type: String,
-      default: ""
+      default: "",
     },
 
     resumeUrl: {
       type: String,
-      default: ""
+      default: "",
     },
 
     resumeText: {
       type: String,
-      default: ""
+      default: "",
     },
 
     resumeVersion: {
       type: Number,
-      default: 1
+      default: 1,
     },
 
     skills: {
       type: [String],
-      default: []
+      default: [],
     },
 
     bio: {
       type: String,
       default: "",
-      maxlength: 300
-    }
+      maxlength: 300,
+    },
+    college: {
+      type: String,
+      default: "",
+      maxlength: 100,
+    },
+
+    location: {
+      type: String,
+      default: "",
+      maxlength: 100,
+    },
+
+    github: {
+      type: String,
+      default: "",
+    },
+
+    linkedin: {
+      type: String,
+      default: "",
+    },
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
-
 userSchema.pre("save", async function () {
-
   if (!this.isModified("password")) {
     return;
   }
-
+  
   const salt = await bcrypt.genSalt(10);
 
-  this.password = await bcrypt.hash(
-    this.password,
-    salt
-  );
+  this.password = await bcrypt.hash(this.password, salt);
 });
 // Compare Password Method
-userSchema.methods.comparePassword =
-  async function (enteredPassword) {
+userSchema.methods.comparePassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
 
-    return await bcrypt.compare(
-      enteredPassword,
-      this.password
-    );
-  };
-
-
-const User =
-  mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema);
 
 export default User;

@@ -21,6 +21,9 @@ from "./notificationRoutes.js";
 import savedJobRoutes
 from "./savedJobRoutes.js";
 
+import userRoutes
+from "./userRoutes.js";
+
 const router = express.Router();
 
 
@@ -57,6 +60,11 @@ router.use(
 router.use(
   "/saved-jobs",
   savedJobRoutes
+);
+
+router.use(
+  "/users",
+  userRoutes
 );
 
 export default router;

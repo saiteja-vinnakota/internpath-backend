@@ -21,6 +21,13 @@ import {
   ROLES
 } from "../constants/roles.js";
 
+import validate
+from "../middleware/validateMiddleware.js";
+
+import {
+  saveJobSchema
+} from "../validators/savedJobValidator.js";
+
 
 const router =
   express.Router();
@@ -56,6 +63,10 @@ router.post(
     ROLES.STUDENT
   ),
 
+  validate(
+    saveJobSchema
+  ),
+
   saveJobController
 );
 
@@ -71,6 +82,10 @@ router.delete(
 
   authorizeRoles(
     ROLES.STUDENT
+  ),
+
+  validate(
+    saveJobSchema
   ),
 
   removeSavedJobController

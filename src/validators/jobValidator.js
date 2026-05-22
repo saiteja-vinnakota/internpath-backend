@@ -1,145 +1,236 @@
-import ErrorResponse
-from "../utils/errorResponse.js";
+import { z }
+from "zod";
+
+import {
+  JOB_TYPES
+} from "../constants/jobTypes.js";
+
+import {
+  objectIdSchema
+} from "./commonValidator.js";
 
 
+// Create Job Schema
+export const createJobSchema =
+  z.object({
 
-// Validate Create Job
-export const validateCreateJob = (
-  req,
-  res,
-  next
-) => {
+    body: z.object({
 
-  const {
-    title,
-    company,
-    description,
-    requiredSkills,
-    location,
-    stipend
-  } = req.body;
+      title:
+        z.string()
 
+          .min(
+            3,
+            "Title must be at least 3 characters"
+          )
 
-  // Title Validation
-  if (
-    !title ||
-    title.trim().length < 3
-  ) {
-
-    return next(
-      new ErrorResponse(
-        "Job title must be at least 3 characters",
-        400
-      )
-    );
-  }
-
-
-  // Company Validation
-  if (
-    !company ||
-    company.trim().length < 2
-  ) {
-
-    return next(
-      new ErrorResponse(
-        "Company name is required",
-        400
-      )
-    );
-  }
-
-
-  // Description Validation
-  if (
-    !description ||
-    description.trim().length < 20
-  ) {
-
-    return next(
-      new ErrorResponse(
-        "Description must be at least 20 characters",
-        400
-      )
-    );
-  }
-
-
-  // Skills Validation
-  if (
-    !requiredSkills ||
-    !Array.isArray(requiredSkills) ||
-    requiredSkills.length === 0
-  ) {
-
-    return next(
-      new ErrorResponse(
-        "At least one skill is required",
-        400
-      )
-    );
-  }
-
-
-  // Location Validation
-  if (!location) {
-
-    return next(
-      new ErrorResponse(
-        "Location is required",
-        400
-      )
-    );
-  }
-
-
-  // Stipend Validation
-  if (
-    stipend &&
-    stipend < 0
-  ) {
-
-    return next(
-      new ErrorResponse(
-        "Stipend cannot be negative",
-        400
-      )
-    );
-  }
-
-
-  next();
-};
+          .max(
+            100,
+            "Title cannot exceed 100 characters"
+          ),
 
 
 
 
-// Validate Update Job
-export const validateUpdateJob = (
-  req,
-  res,
-  next
-) => {
+      company:
+        z.string()
 
-  const {
-    stipend
-  } = req.body;
+          .min(
+            2,
+            "Company name is required"
+          ),
 
 
-  // Negative Stipend Check
-  if (
-    stipend &&
-    stipend < 0
-  ) {
-
-    return next(
-      new ErrorResponse(
-        "Stipend cannot be negative",
-        400
-      )
-    );
-  }
 
 
-  next();
-};
+      description:
+        z.string()
+
+          .min(
+            20,
+            "Description too short"
+          ),
+
+
+
+
+      requiredSkills:
+        z.array(
+          z.string()
+        )
+
+          .min(
+            1,
+            "At least one skill required"
+          ),
+
+
+
+
+      location:
+        z.string()
+
+          .min(
+            2,
+            "Location is required"
+          ),
+
+
+
+
+      type:
+        z.enum([
+
+          JOB_TYPES.REMOTE,
+
+          JOB_TYPES.ONSITE,
+
+          JOB_TYPES.HYBRID
+        ]),
+
+
+
+
+      stipend:
+        z.number()
+
+          .min(
+            0,
+            "Stipend cannot be negative"
+          ),
+
+
+
+
+      deadline:
+        z.string()
+
+          .optional()
+    })
+  });
+
+  // Update Job Schema
+export const updateJobSchema =
+  z.object({
+
+    params: z.object({
+
+      id: objectIdSchema
+    }),
+
+    body: z.object({
+
+      title:
+        z.string()
+
+          .min(
+            3,
+            "Title must be at least 3 characters"
+          )
+
+          .max(
+            100,
+            "Title cannot exceed 100 characters"
+          )
+
+          .optional(),
+
+
+
+
+      company:
+        z.string()
+
+          .min(
+            2,
+            "Company name is required"
+          )
+
+          .optional(),
+
+
+
+
+      description:
+        z.string()
+
+          .min(
+            20,
+            "Description too short"
+          )
+
+          .optional(),
+
+
+
+
+      requiredSkills:
+        z.array(
+          z.string()
+        )
+
+          .min(
+            1,
+            "At least one skill required"
+          )
+
+          .optional(),
+
+
+
+
+      location:
+        z.string()
+
+          .min(
+            2,
+            "Location is required"
+          )
+
+          .optional(),
+
+
+
+
+      type:
+        z.enum([
+
+          JOB_TYPES.REMOTE,
+
+          JOB_TYPES.ONSITE,
+
+          JOB_TYPES.HYBRID
+        ])
+
+          .optional(),
+
+
+
+
+      stipend:
+        z.number()
+
+          .min(
+            0,
+            "Stipend cannot be negative"
+          )
+
+          .optional(),
+
+
+
+
+      deadline:
+        z.string()
+
+          .optional(),
+
+
+
+
+      isActive:
+        z.boolean()
+
+          .optional()
+    })
+  });

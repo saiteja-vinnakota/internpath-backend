@@ -23,30 +23,152 @@ export const createJob = async (
 };
 
 
-
 // Get All Jobs
-export const getAllJobs = async (
-  queryString
-) => {
+export const getAllJobs =
+  async (queryParams) => {
 
-  const features =
-    new APIFeatures(
-      Job.find({ isActive: true }),
-      queryString
-    )
-      .filter()
-      .sort()
-      .limitFields()
-      .paginate();
+    // Query Defaults
+    const page =
+      Number(queryParams.page) || 1;
 
-  const jobs =
-    await features.query.populate(
-      "createdBy",
-      "name email"
-    );
+    const limit =
+      Number(queryParams.limit) || 10;
 
-  return jobs;
-};
+    const skip =
+      (page - 1) * limit;
+
+
+    // Search Keyword
+    const keyword =
+      queryParams.keyword || "";
+
+
+    // Filters
+    const filters = {
+
+      isActive: true
+    };
+
+
+    // Search By Title/Company
+    if (keyword) {
+
+      filters.$or = [
+
+        {
+          title: {
+            $regex: keyword,
+            $options: "i"
+          }
+        },
+
+        {
+          company: {
+            $regex: keyword,
+            $options: "i"
+          }
+        },
+
+        {
+          requiredSkills: {
+            $regex: keyword,
+            $options: "i"
+          }
+        }
+      ];
+    }
+
+
+    // Location Filter
+    if (queryParams.location) {
+
+      filters.location = {
+        $regex: queryParams.location,
+        $options: "i"
+      };
+    }
+
+
+    // Job Type Filter
+    if (queryParams.type) {
+
+      filters.type =
+        queryParams.type;
+    }
+
+
+    // Sorting
+    let sortOption = {
+      createdAt: -1
+    };
+
+
+    if (
+      queryParams.sort ===
+      "stipend"
+    ) {
+
+      sortOption = {
+        stipend: -1
+      };
+    }
+
+
+    if (
+      queryParams.sort ===
+      "oldest"
+    ) {
+
+      sortOption = {
+        createdAt: 1
+      };
+    }
+
+
+    // Fetch Jobs
+    const jobs =
+      await Job.find(filters)
+
+        .populate(
+          "createdBy",
+          "name email"
+        )
+
+        .sort(sortOption)
+
+        .skip(skip)
+
+        .limit(limit);
+
+
+    // Total Count
+    const totalJobs =
+      await Job.countDocuments(
+        filters
+      );
+
+
+    // Pagination Metadata
+    const pagination = {
+
+      totalJobs,
+
+      currentPage: page,
+
+      totalPages:
+        Math.ceil(
+          totalJobs / limit
+        ),
+
+      limit
+    };
+
+
+    return {
+      jobs,
+      pagination
+    };
+  };
 
 
 

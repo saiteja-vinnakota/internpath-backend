@@ -8,131 +8,141 @@ import MatchCache from "../models/MatchCache.js";
 
 import ErrorResponse from "../utils/errorResponse.js";
 
-import { createNotification } from "./notificationService.js";
+import {
+  createNotification
+} from "./notificationService.js";
+
+import {
+  sendEmail
+} from "./emailService.js";
+
+import applicationStatusTemplate
+from "../templates/emails/applicationStatusEmail.js";
 
 
 
 
 // Apply To Job
-export const applyToJob = async (
-  studentId,
-  jobId,
-) => {
+export const applyToJob =
+  async (
+    studentId,
+    jobId,
+  ) => {
 
-  // Check Job Exists
-  const job =
-    await Job.findById(
+    // Check Job Exists
+    const job =
+      await Job.findById(
+        jobId,
+      );
+
+
+    if (!job) {
+
+      throw new ErrorResponse(
+        "Job not found",
+        404,
+      );
+    }
+
+
+    // Check Student Exists
+    const student =
+      await User.findById(
+        studentId,
+      );
+
+
+    if (!student) {
+
+      throw new ErrorResponse(
+        "Student not found",
+        404,
+      );
+    }
+
+
+    // Resume Required
+    if (!student.resumeUrl) {
+
+      throw new ErrorResponse(
+        "Upload resume before applying",
+        400,
+      );
+    }
+
+
+    // Prevent Duplicate Application
+    const existingApplication =
+      await Application.findOne({
+
+        student: studentId,
+
+        job: jobId,
+      });
+
+
+    if (existingApplication) {
+
+      throw new ErrorResponse(
+        "Already applied to this job",
+        400,
+      );
+    }
+
+
+    // Fetch AI Match Cache
+    const matchCache =
+      await MatchCache.findOne({
+
+        student: studentId,
+
+        job: jobId,
+      });
+
+
+    // Create Application
+    const application =
+      await Application.create({
+
+        student: studentId,
+
+        job: jobId,
+
+        resumeUrl:
+          student.resumeUrl,
+
+
+
+        // AI Snapshot
+        matchScore:
+          matchCache?.score || 0,
+
+        matchedSkills:
+          matchCache?.matchedSkills || [],
+
+        missingSkills:
+          matchCache?.missingSkills || [],
+
+        aiSuggestion:
+          matchCache?.suggestion || "",
+      });
+
+
+    // Create Student Notification
+    await createNotification(
+
+      studentId,
+
+      `Successfully applied for ${job.title}`,
+
+      "APPLICATION",
+
       jobId,
     );
 
 
-  if (!job) {
-
-    throw new ErrorResponse(
-      "Job not found",
-      404,
-    );
-  }
-
-
-  // Check Student Exists
-  const student =
-    await User.findById(
-      studentId,
-    );
-
-
-  if (!student) {
-
-    throw new ErrorResponse(
-      "Student not found",
-      404,
-    );
-  }
-
-
-  // Resume Required
-  if (!student.resumeUrl) {
-
-    throw new ErrorResponse(
-      "Upload resume before applying",
-      400,
-    );
-  }
-
-
-  // Prevent Duplicate Application
-  const existingApplication =
-    await Application.findOne({
-
-      student: studentId,
-
-      job: jobId,
-    });
-
-
-  if (existingApplication) {
-
-    throw new ErrorResponse(
-      "Already applied to this job",
-      400,
-    );
-  }
-
-
-  // Fetch AI Match Cache
-  const matchCache =
-    await MatchCache.findOne({
-
-      student: studentId,
-
-      job: jobId,
-    });
-
-
-  // Create Application
-  const application =
-    await Application.create({
-
-      student: studentId,
-
-      job: jobId,
-
-      resumeUrl:
-        student.resumeUrl,
-
-
-
-      // AI Snapshot
-      matchScore:
-        matchCache?.score || 0,
-
-      matchedSkills:
-        matchCache?.matchedSkills || [],
-
-      missingSkills:
-        matchCache?.missingSkills || [],
-
-      aiSuggestion:
-        matchCache?.suggestion || "",
-    });
-
-
-  // Create Student Notification
-  await createNotification(
-
-    studentId,
-
-    `Successfully applied for ${job.title}`,
-
-    "APPLICATION",
-
-    jobId,
-  );
-
-
-  return application;
-};
+    return application;
+  };
 
 
 
@@ -305,6 +315,52 @@ export const updateApplicationStatus =
         notificationType,
 
         application.job._id,
+      );
+    }
+
+
+    // Send Status Email
+    try {
+
+      const student =
+        await User.findById(
+          application.student
+        );
+
+
+      if (student) {
+
+        const emailHtml =
+          applicationStatusTemplate(
+
+            student.name,
+
+            application.job.company,
+
+            application.job.title,
+
+            status
+          );
+
+
+
+        await sendEmail(
+
+          student.email,
+
+          "InternPath Application Update",
+
+          emailHtml
+        );
+      }
+
+    } catch (error) {
+
+      console.error(
+
+        "Application status email failed:",
+
+        error.message
       );
     }
 

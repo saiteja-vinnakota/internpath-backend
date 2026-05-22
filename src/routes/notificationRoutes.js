@@ -12,6 +12,13 @@ import {
   protect
 } from "../middleware/authMiddleware.js";
 
+import validate
+from "../middleware/validateMiddleware.js";
+
+import {
+  notificationIdSchema
+} from "../validators/notificationValidator.js";
+
 
 const router =
   express.Router();
@@ -38,6 +45,10 @@ router.put(
   "/:id/read",
 
   protect,
+
+  validate(
+    notificationIdSchema
+  ),
 
   markAsRead
 );

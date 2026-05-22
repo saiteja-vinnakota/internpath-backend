@@ -1,20 +1,57 @@
-import rateLimit from "express-rate-limit";
+import rateLimit
+from "express-rate-limit";
 
-const apiLimiter = rateLimit({
 
-  windowMs: 15 * 60 * 1000,
 
-  max: 100,
 
-  message: {
-    success: false,
-    message:
-      "Too many requests, please try again later."
-  },
+// Global API Limiter
+export const apiLimiter =
+  rateLimit({
 
-  standardHeaders: true,
+    windowMs:
+      15 * 60 * 1000,
 
-  legacyHeaders: false
-});
+    max: 100,
+
+    message: {
+
+      success: false,
+
+      message:
+        "Too many requests, please try again later."
+    },
+
+    standardHeaders: true,
+
+    legacyHeaders: false
+  });
+
+
+
+
+// Auth Route Limiter
+export const authLimiter =
+  rateLimit({
+
+    windowMs:
+      15 * 60 * 1000,
+
+    max: 10,
+
+    message: {
+
+      success: false,
+
+      message:
+        "Too many login attempts, please try again later."
+    },
+
+    standardHeaders: true,
+
+    legacyHeaders: false
+  });
+
+
+
 
 export default apiLimiter;

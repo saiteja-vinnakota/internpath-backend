@@ -15,8 +15,16 @@ import {
   ROLES
 } from "../constants/roles.js";
 
+import validate
+from "../middleware/validateMiddleware.js";
 
-const router = express.Router();
+import {
+  matchJobSchema
+} from "../validators/matchValidator.js";
+
+
+const router =
+  express.Router();
 
 
 
@@ -30,6 +38,10 @@ router.get(
 
   authorizeRoles(
     ROLES.STUDENT
+  ),
+
+  validate(
+    matchJobSchema
   ),
 
   getAIJobMatch

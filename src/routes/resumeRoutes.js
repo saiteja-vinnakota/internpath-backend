@@ -18,14 +18,20 @@ import {
   ROLES
 } from "../constants/roles.js";
 
+import {
+  validateResumeUpload
+} from "../validators/resumeValidator.js";
 
-const router = express.Router();
+
+const router =
+  express.Router();
 
 
 
 
 // Upload Resume
 router.post(
+
   "/upload",
 
   protect,
@@ -34,7 +40,11 @@ router.post(
     ROLES.STUDENT
   ),
 
-  upload.single("resume"),
+  upload.single(
+    "resume"
+  ),
+
+  validateResumeUpload,
 
   uploadResume
 );
