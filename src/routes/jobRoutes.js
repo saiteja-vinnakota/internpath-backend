@@ -1,129 +1,100 @@
 import express from "express";
 
 import {
-
   create,
   getAll,
   getOne,
   update,
   remove,
-
+  close,
+  getRecruiterJobs,
 } from "../controllers/jobController.js";
 
-import {
-  protect
-} from "../middleware/authMiddleware.js";
+import { protect } from "../middleware/authMiddleware.js";
 
-import authorizeRoles
-from "../middleware/roleMiddleware.js";
+import authorizeRoles from "../middleware/roleMiddleware.js";
 
-import {
-  ROLES
-} from "../constants/roles.js";
+import { ROLES } from "../constants/roles.js";
 
-import validate
-from "../middleware/validateMiddleware.js";
+import validate from "../middleware/validateMiddleware.js";
 
 import {
-
   createJobSchema,
-  updateJobSchema
-
+  updateJobSchema,
 } from "../validators/jobValidator.js";
 
-import {
-  idParamsSchema
-} from "../validators/commonValidator.js";
+import { idParamsSchema } from "../validators/commonValidator.js";
 
+const router = express.Router();
 
-const router =
-  express.Router();
-
-
-
-
-// Public Routes
+router.get("/", getAll);
 
 router.get(
-  "/",
-  getAll
+  "/recruiter/me",
+
+  protect,
+
+  authorizeRoles(ROLES.RECRUITER),
+
+  getRecruiterJobs,
 );
 
-
-
-
 router.get(
-
   "/:id",
 
-  validate(
-    idParamsSchema
-  ),
+  validate(idParamsSchema),
 
-  getOne
+  getOne,
 );
-
-
-
-
-// Recruiter Protected Routes
 
 router.post(
-
   "/",
 
   protect,
 
-  authorizeRoles(
-    ROLES.RECRUITER
-  ),
+  authorizeRoles(ROLES.RECRUITER),
 
-  validate(
-    createJobSchema
-  ),
+  validate(createJobSchema),
 
-  create
+  create,
 );
 
-
-
-
 router.put(
-
   "/:id",
 
   protect,
 
-  authorizeRoles(
-    ROLES.RECRUITER
-  ),
+  authorizeRoles(ROLES.RECRUITER),
 
-  validate(
-    updateJobSchema
-  ),
+  validate(updateJobSchema),
 
-  update
+  update,
 );
 
+router.put(
+  "/:id/close",
 
+  protect,
+
+  authorizeRoles(ROLES.RECRUITER),
+
+  validate(idParamsSchema),
+
+  close,
+);
 
 
 router.delete(
-
   "/:id",
 
   protect,
 
-  authorizeRoles(
-    ROLES.RECRUITER
-  ),
+  authorizeRoles(ROLES.RECRUITER),
 
-  validate(
-    idParamsSchema
-  ),
 
-  remove
+  validate(idParamsSchema),
+
+  remove,
 );
-
 
 export default router;

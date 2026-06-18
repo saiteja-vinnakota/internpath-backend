@@ -1,111 +1,196 @@
 import mongoose from "mongoose";
+
 import bcrypt from "bcryptjs";
 
-import { ROLES } from "../constants/roles.js";
+import { ROLES }
+from "../constants/roles.js";
 
-const userSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: [true, "Name is required"],
-      trim: true,
-      minlength: 2,
-      maxlength: 50,
+const userSchema =
+  new mongoose.Schema(
+
+    {
+      name: {
+        type: String,
+        required: [
+          true,
+          "Name is required",
+        ],
+        trim: true,
+        minlength: 2,
+        maxlength: 50,
+      },
+
+      email: {
+        type: String,
+        required: [
+          true,
+          "Email is required",
+        ],
+        unique: true,
+        lowercase: true,
+        trim: true,
+        index: true,
+      },
+
+      password: {
+        type: String,
+        required: [
+          true,
+          "Password is required",
+        ],
+        minlength: 6,
+        select: false,
+      },
+
+      role: {
+        type: String,
+        enum: [
+          ROLES.STUDENT,
+          ROLES.RECRUITER,
+        ],
+        default:
+          ROLES.STUDENT,
+      },
+
+      profilePicture: {
+        type: String,
+        default: "",
+      },
+
+      // RESUME
+      resumeUrl: {
+        type: String,
+        default: "",
+      },
+
+      resumeText: {
+        type: String,
+        default: "",
+      },
+
+      resumeVersion: {
+        type: Number,
+        default: 1,
+      },
+
+      // COMMON
+      bio: {
+        type: String,
+        default: "",
+        maxlength: 500,
+      },
+
+      location: {
+        type: String,
+        default: "",
+        maxlength: 100,
+      },
+
+      linkedin: {
+        type: String,
+        default: "",
+      },
+
+      // STUDENT
+      skills: {
+        type: [String],
+        default: [],
+      },
+
+      careerInterests: {
+        type: [String],
+        default: [],
+      },
+
+      achievements: {
+        type: [String],
+        default: [],
+      },
+
+      college: {
+        type: String,
+        default: "",
+        maxlength: 100,
+      },
+
+      github: {
+        type: String,
+        default: "",
+      },
+
+      // RECRUITER
+      company: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: 120,
+      },
+
+      designation: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: 120,
+      },
+
+      companyWebsite: {
+        type: String,
+        default: "",
+        trim: true,
+      },
     },
 
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      unique: true,
-      lowercase: true,
-      trim: true,
-      index: true,
-    },
+    {
+      timestamps: true,
+    }
+  );
 
-    password: {
-      type: String,
-      required: [true, "Password is required"],
-      minlength: 6,
-      select: false,
-    },
+// HASH PASSWORD
+userSchema.pre(
+  "save",
 
-    role: {
-      type: String,
-      enum: [ROLES.STUDENT, ROLES.RECRUITER],
-      default: ROLES.STUDENT,
-    },
+  async function () {
 
-    profilePicture: {
-      type: String,
-      default: "",
-    },
+    if (
+      !this.isModified(
+        "password"
+      )
+    ) {
 
-    resumeUrl: {
-      type: String,
-      default: "",
-    },
+      return;
+    }
 
-    resumeText: {
-      type: String,
-      default: "",
-    },
+    const salt =
+      await bcrypt.genSalt(10);
 
-    resumeVersion: {
-      type: Number,
-      default: 1,
-    },
+    this.password =
+      await bcrypt.hash(
 
-    skills: {
-      type: [String],
-      default: [],
-    },
+        this.password,
 
-    bio: {
-      type: String,
-      default: "",
-      maxlength: 300,
-    },
-    college: {
-      type: String,
-      default: "",
-      maxlength: 100,
-    },
-
-    location: {
-      type: String,
-      default: "",
-      maxlength: 100,
-    },
-
-    github: {
-      type: String,
-      default: "",
-    },
-
-    linkedin: {
-      type: String,
-      default: "",
-    },
-  },
-  {
-    timestamps: true,
-  },
+        salt
+      );
+  }
 );
 
-userSchema.pre("save", async function () {
-  if (!this.isModified("password")) {
-    return;
-  }
-  
-  const salt = await bcrypt.genSalt(10);
+// COMPARE PASSWORD
+userSchema.methods.comparePassword =
+  async function (
+    enteredPassword
+  ) {
 
-  this.password = await bcrypt.hash(this.password, salt);
-});
-// Compare Password Method
-userSchema.methods.comparePassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
+    return await bcrypt.compare(
 
-const User = mongoose.model("User", userSchema);
+      enteredPassword,
+
+      this.password
+    );
+  };
+
+const User =
+  mongoose.model(
+    "User",
+    userSchema
+  );
 
 export default User;

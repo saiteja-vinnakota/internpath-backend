@@ -1,20 +1,12 @@
 import streamifier from "streamifier";
-
 import asyncHandler from "../utils/asyncHandler.js";
-
 import User from "../models/User.js";
-
 import cloudinary from "../config/cloudinary.js";
-
 import { successResponse } from "../utils/responseFormatter.js";
-
 import { parseResume } from "../services/resumeParserService.js";
-
 import extractSkills from "../utils/extractSkills.js";
 
-// Upload Resume
 export const uploadResume = asyncHandler(async (req, res) => {
-  // Check File Exists
   if (!req.file) {
     return res.status(400).json({
       success: false,
@@ -22,52 +14,49 @@ export const uploadResume = asyncHandler(async (req, res) => {
     });
   }
 
-  // Parse Resume Text Directly From Buffer
-  const resumeText = await parseResume(req.file.buffer);
+  const originalBuffer = req.file.buffer;
+  const parserBuffer = Buffer.from(originalBuffer);
 
-  // Upload PDF To Cloudinary
-  const uploadResult = await new Promise((resolve, reject) => {
+  const [resumeText, uploadResult] = await Promise.all([
+  parseResume(parserBuffer),
+  new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: "internpath/resumes",
-
         resource_type: "raw",
-
         format: "pdf",
+        type: "upload",
       },
-
       (error, result) => {
         if (error) {
+          console.error("Cloudinary error:", error); // ← add this
           reject(error);
         } else {
+          console.log("Cloudinary result:", result);  // ← add this
           resolve(result);
         }
-      },
+      }
     );
+    streamifier.createReadStream(originalBuffer).pipe(stream);
+  }),
+]);
 
-    streamifier.createReadStream(req.file.buffer).pipe(stream);
-  });
+console.log("Resume URL:", uploadResult.secure_url); // ← add this
 
-  // Cloudinary Resume URL
+  // ✅ Use secure_url directly — no transformation flags needed
   const resumeUrl = uploadResult.secure_url;
 
   const skills = extractSkills(resumeText);
-  // Update User
+
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
-
     {
       resumeUrl,
       resumeText,
       skills,
-      $inc: {
-        resumeVersion: 1,
-      },
+      $inc: { resumeVersion: 1 },
     },
-
-    {
-      new: true,
-    },
+    { new: true }
   ).select("-password");
 
   successResponse(res, "Resume uploaded successfully", updatedUser, 200);

@@ -24,6 +24,9 @@ from "./savedJobRoutes.js";
 import userRoutes
 from "./userRoutes.js";
 
+import testRoutes from "./testRoutes.js";
+
+
 const router = express.Router();
 
 
@@ -66,5 +69,7 @@ router.use(
   "/users",
   userRoutes
 );
+
+router.use("/test", testRoutes);
 
 export default router;

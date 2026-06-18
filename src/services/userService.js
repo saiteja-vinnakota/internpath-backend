@@ -4,16 +4,13 @@ from "../models/User.js";
 import ErrorResponse
 from "../utils/errorResponse.js";
 
-
-
-// Get Current User Profile
+// GET CURRENT USER PROFILE
 export const getMyProfile =
   async (userId) => {
 
     const user =
       await User.findById(userId)
         .select("-password");
-
 
     if (!user) {
 
@@ -23,14 +20,10 @@ export const getMyProfile =
       );
     }
 
-
     return user;
   };
 
-
-
-
-// Update Profile
+// UPDATE PROFILE
 export const updateProfile =
   async (
     userId,
@@ -40,7 +33,6 @@ export const updateProfile =
     const user =
       await User.findById(userId);
 
-
     if (!user) {
 
       throw new ErrorResponse(
@@ -49,37 +41,61 @@ export const updateProfile =
       );
     }
 
+    // ALLOWED FIELDS
+    const allowedFields = [
 
-    // Update Fields
-    Object.keys(updateData)
-      .forEach((key) => {
+      // COMMON
+      "name",
+      "bio",
+      "location",
+      "linkedin",
+      "profilePicture",
 
-        user[key] =
-          updateData[key];
-      });
+      // STUDENT
+      "skills",
+      "careerInterests",
+      "achievements",
+      "college",
+      "github",
 
+      // RECRUITER
+      "company",
+      "designation",
+      "companyWebsite",
+    ];
+
+    // UPDATE SAFE FIELDS ONLY
+    allowedFields.forEach(
+      (field) => {
+
+        if (
+          updateData[field] !==
+          undefined
+        ) {
+
+          user[field] =
+            updateData[field];
+        }
+      }
+    );
 
     await user.save();
-
 
     return await User.findById(
       userId
     ).select("-password");
   };
 
-
-
-
-// Get Public User Profile
+// GET PUBLIC USER PROFILE
 export const getPublicProfile =
   async (userId) => {
 
     const user =
       await User.findById(userId)
+
         .select(
           "-password -email"
         );
-
 
     if (!user) {
 
@@ -88,7 +104,6 @@ export const getPublicProfile =
         404
       );
     }
-
 
     return user;
   };

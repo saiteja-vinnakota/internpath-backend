@@ -1,84 +1,140 @@
 import mongoose from "mongoose";
 
-import { JOB_TYPES }
-from "../constants/jobTypes.js";
+const jobSchema =
+  new mongoose.Schema(
+    {
 
-import { ROLES }
-from "../constants/roles.js";
+      title: {
+        type: String,
+        required: true,
+        trim: true,
+        maxlength: 100,
+        index: true,
+      },
 
+      company: {
+        type: String,
+        required: true,
+        trim: true,
+        maxlength: 100,
+      },
 
-const jobSchema = new mongoose.Schema(
-  {
+      description: {
+        type: String,
+        required: true,
+      },
 
-    title: {
-      type: String,
-      required: [true, "Job title is required"],
-      trim: true,
-      maxlength: 100,
-      index: true
+      category: {
+        type: String,
+        trim: true,
+      },
+
+      requiredSkills: {
+        type: [String],
+        default: [],
+      },
+
+      perks: {
+        type: [String],
+        default: [],
+      },
+
+      location: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+
+      mode: {
+        type: String,
+        enum: [
+          "remote",
+          "hybrid",
+          "onsite",
+        ],
+        default: "remote",
+      },
+
+      stipend: {
+        type: Number,
+        default: 0,
+      },
+
+      duration: {
+        type: String,
+        trim: true,
+      },
+
+      openingsCount: {
+        type: Number,
+        default: 1,
+        min: 1,
+      },
+
+      startDate: {
+        type: Date,
+      },
+
+      deadline: {
+        type: Date,
+      },
+
+      eligibleBatches: {
+        type: [String],
+        default: [],
+      },
+
+      eligibleDegrees: {
+        type: [String],
+        default: [],
+      },
+
+      minimumCGPA: {
+        type: Number,
+        min: 0,
+        max: 10,
+      },
+
+      status: {
+        type: String,
+        enum: [
+          "active",
+          "closed",
+          "draft",
+        ],
+        default: "active",
+      },
+
+      featured: {
+        type: Boolean,
+        default: false,
+      },
+
+      createdBy: {
+        type:
+          mongoose.Schema.Types
+            .ObjectId,
+
+        ref: "User",
+
+        required: true,
+      },
+
+      isActive: {
+        type: Boolean,
+        default: true,
+      },
+
     },
-
-    company: {
-      type: String,
-      required: [true, "Company name is required"],
-      trim: true,
-      maxlength: 100
-    },
-
-    description: {
-      type: String,
-      required: [true, "Description is required"]
-    },
-
-    requiredSkills: {
-      type: [String],
-      required: true,
-      default: []
-    },
-
-    location: {
-      type: String,
-      required: true,
-      trim: true
-    },
-
-    type: {
-      type: String,
-      enum: [
-        JOB_TYPES.REMOTE,
-        JOB_TYPES.ONSITE,
-        JOB_TYPES.HYBRID
-      ],
-      default: JOB_TYPES.REMOTE
-    },
-
-    stipend: {
-      type: Number,
-      default: 0
-    },
-
-    deadline: {
-      type: Date
-    },
-
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true
-    },
-
-    isActive: {
-      type: Boolean,
-      default: true
+    {
+      timestamps: true,
     }
-  },
-  {
-    timestamps: true
-  }
-);
-
+  );
 
 const Job =
-  mongoose.model("Job", jobSchema);
+  mongoose.model(
+    "Job",
+    jobSchema
+  );
 
 export default Job;

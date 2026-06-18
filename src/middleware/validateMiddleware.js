@@ -15,30 +15,35 @@ const validate =
 
             params: req.params,
 
-            query: req.query
+            query: req.query,
           });
 
         next();
 
       } catch (error) {
 
+        const issues =
+          error.issues || [];
+
         return res.status(400).json({
 
           success: false,
 
-          message: "Validation failed",
+          message:
+            issues[0]?.message ||
+            "Validation failed",
 
           errors:
-            error.errors?.map(
-              (err) => ({
+            issues.map(
+              (issue) => ({
 
                 field:
-                  err.path.join("."),
+                  issue.path.join("."),
 
                 message:
-                  err.message
+                  issue.message,
               })
-            )
+            ),
         });
       }
     };

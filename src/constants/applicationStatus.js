@@ -1,7 +1,17 @@
 export const APPLICATION_STATUS = {
-  APPLIED: "applied",
-  REVIEWING: "reviewing",
-  SHORTLISTED: "shortlisted",
-  REJECTED: "rejected",
-  ACCEPTED: "accepted"
+
+  APPLIED:
+    "applied",
+
+  SHORTLISTED:
+    "shortlisted",
+
+  INTERVIEW:
+    "interview",
+
+  SELECTED:
+    "selected",
+
+  REJECTED:
+    "rejected",
 };

@@ -1,15 +1,13 @@
 import { z }
 from "zod";
 
-
-
-
-// Update Profile Schema
+// UPDATE PROFILE SCHEMA
 export const updateProfileSchema =
   z.object({
 
     body: z.object({
 
+      // COMMON
       name:
         z.string()
 
@@ -25,44 +23,15 @@ export const updateProfileSchema =
 
           .optional(),
 
-
-
-
-      skills:
-        z.array(
-          z.string()
-        )
-
-          .optional(),
-
-
-
-
       bio:
         z.string()
 
           .max(
-            300,
-            "Bio cannot exceed 300 characters"
+            500,
+            "Bio cannot exceed 500 characters"
           )
 
           .optional(),
-
-
-
-
-      college:
-        z.string()
-
-          .max(
-            100,
-            "College name too long"
-          )
-
-          .optional(),
-
-
-
 
       location:
         z.string()
@@ -74,8 +43,55 @@ export const updateProfileSchema =
 
           .optional(),
 
+      linkedin:
+        z.string()
 
+          .url(
+            "Invalid LinkedIn URL"
+          )
 
+          .optional()
+
+          .or(
+            z.literal("")
+          ),
+
+      profilePicture:
+        z.string()
+
+          .optional(),
+
+      // STUDENT
+      skills:
+        z.array(
+          z.string()
+        )
+
+          .optional(),
+
+      careerInterests:
+        z.array(
+          z.string()
+        )
+
+          .optional(),
+
+      achievements:
+        z.array(
+          z.string()
+        )
+
+          .optional(),
+
+      college:
+        z.string()
+
+          .max(
+            100,
+            "College name too long"
+          )
+
+          .optional(),
 
       github:
         z.string()
@@ -84,26 +100,44 @@ export const updateProfileSchema =
             "Invalid GitHub URL"
           )
 
-          .optional(),
+          .optional()
 
+          .or(
+            z.literal("")
+          ),
 
-
-
-      linkedin:
+      // RECRUITER
+      company:
         z.string()
 
-          .url(
-            "Invalid LinkedIn URL"
+          .max(
+            120,
+            "Company name too long"
           )
 
           .optional(),
 
-
-
-
-      profilePicture:
+      designation:
         z.string()
 
+          .max(
+            120,
+            "Designation too long"
+          )
+
+          .optional(),
+
+      companyWebsite:
+        z.string()
+
+          .url(
+            "Invalid company website URL"
+          )
+
           .optional()
+
+          .or(
+            z.literal("")
+          ),
     })
   });

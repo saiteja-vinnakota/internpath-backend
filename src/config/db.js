@@ -1,18 +1,36 @@
 import mongoose from "mongoose";
 
-const connectDB = async () => {
-  try {
+const connectDB =
+  async () => {
 
-    const conn = await mongoose.connect(process.env.MONGO_URI);
+    try {
 
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+      const conn =
+        await mongoose.connect(
+          process.env.MONGO_URI,
+          {
 
-  } catch (error) {
+            serverSelectionTimeoutMS: 30000,
 
-    console.error("MongoDB Connection Error:", error.message);
+            socketTimeoutMS: 45000,
 
-    process.exit(1);
-  }
-};
+            maxPoolSize: 10,
+          }
+        );
+
+      console.log(
+        `MongoDB Connected: ${conn.connection.host}`
+      );
+
+    } catch (error) {
+
+      console.error(
+        "MongoDB Connection Error:",
+        error.message
+      );
+
+      process.exit(1);
+    }
+  };
 
 export default connectDB;

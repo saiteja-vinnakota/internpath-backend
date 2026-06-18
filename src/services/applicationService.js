@@ -8,362 +8,291 @@ import MatchCache from "../models/MatchCache.js";
 
 import ErrorResponse from "../utils/errorResponse.js";
 
-import {
-  createNotification
-} from "./notificationService.js";
+import { createNotification } from "./notificationService.js";
 
-import {
-  sendEmail
-} from "./emailService.js";
+import { sendEmail } from "./emailService.js";
 
-import applicationStatusTemplate
-from "../templates/emails/applicationStatusEmail.js";
+import applicationStatusTemplate from "../templates/emails/applicationStatusEmail.js";
 
+// VALID STATUS TRANSITIONS
+const VALID_STATUS_FLOW = {
+  applied: ["shortlisted", "rejected"],
 
+  shortlisted: ["interview", "rejected"],
 
+  interview: ["selected", "rejected"],
 
-// Apply To Job
-export const applyToJob =
-  async (
+  selected: [],
+
+  rejected: [],
+};
+
+// APPLY TO JOB
+export const applyToJob = async (studentId, jobId) => {
+  // CHECK JOB
+  const job = await Job.findById(jobId);
+
+  if (!job) {
+    throw new ErrorResponse("Job not found", 404);
+  }
+
+  // CHECK STUDENT
+  const student = await User.findById(studentId);
+
+  if (!student) {
+    throw new ErrorResponse("Student not found", 404);
+  }
+
+  // RESUME REQUIRED
+  if (!student.resumeUrl) {
+    throw new ErrorResponse("Upload resume before applying", 400);
+  }
+
+  // PREVENT DUPLICATE
+  const existingApplication = await Application.findOne({
+    student: studentId,
+
+    job: jobId,
+  });
+
+  if (existingApplication) {
+    throw new ErrorResponse("Already applied to this internship", 400);
+  }
+
+  // AI CACHE
+  const matchCache = await MatchCache.findOne({
+    student: studentId,
+
+    job: jobId,
+  });
+
+  // CREATE APPLICATION
+  const application = await Application.create({
+    student: studentId,
+
+    job: jobId,
+
+    resumeUrl: student.resumeUrl,
+
+    status: "applied",
+
+    // AI SNAPSHOT
+    matchScore: matchCache?.score || 0,
+
+    matchedSkills: matchCache?.matchedSkills || [],
+
+    missingSkills: matchCache?.missingSkills || [],
+
+    aiSuggestion: matchCache?.suggestion || "",
+  });
+
+  // NOTIFICATION
+  await createNotification(
     studentId,
+
+    `Successfully applied for ${job.title}`,
+
+    "APPLICATION",
+
     jobId,
-  ) => {
+  );
 
-    // Check Job Exists
-    const job =
-      await Job.findById(
-        jobId,
-      );
+  return application;
+};
 
+// GET MY APPLICATIONS
+export const getMyApplications = async (studentId) => {
+  return await Application.find({
+    student: studentId,
+  })
 
-    if (!job) {
+    .populate("job")
 
-      throw new ErrorResponse(
-        "Job not found",
-        404,
-      );
-    }
+    .sort({
+      createdAt: -1,
+    });
+};
 
+// GET JOB APPLICANTS
+export const getJobApplicants = async (
+  jobId,
+  recruiterId,
+  page = 1,
+  limit = 12,
+) => {
+  // VERIFY JOB
+  const job = await Job.findById(jobId);
 
-    // Check Student Exists
-    const student =
-      await User.findById(
-        studentId,
-      );
+  if (!job) {
+    throw new ErrorResponse("Internship not found", 404);
+  }
 
+  // OWNERSHIP CHECK
+  if (job.createdBy.toString() !== recruiterId.toString()) {
+    throw new ErrorResponse("Not authorized", 403);
+  }
 
-    if (!student) {
+  // PAGINATION
+  const skip = (page - 1) * limit;
 
-      throw new ErrorResponse(
-        "Student not found",
-        404,
-      );
-    }
+  // TOTAL COUNT
+  const total = await Application.countDocuments({
+    job: jobId,
+  });
 
+  // FETCH APPLICANTS
+  const data = await Application.find({
+    job: jobId,
+  })
 
-    // Resume Required
-    if (!student.resumeUrl) {
+    .populate(
+      "student",
+      `
+          name
+          email
+          skills
+          resumeUrl
+          college
+          bio
+          github
+          linkedin
+          profilePicture
+        `,
+    )
 
-      throw new ErrorResponse(
-        "Upload resume before applying",
-        400,
-      );
-    }
+    // BEST MATCH FIRST
+    .sort({
+      matchScore: -1,
+    })
+    .skip(skip)
+    .limit(limit);
 
+  return {
+    data,
+    pagination: {
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    },
+  };
+};
 
-    // Prevent Duplicate Application
-    const existingApplication =
-      await Application.findOne({
+// UPDATE APPLICATION STATUS
+export const updateApplicationStatus = async (
+  applicationId,
+  recruiterId,
+  newStatus,
+) => {
+  const application = await Application.findById(applicationId)
 
-        student: studentId,
+    .populate("job");
 
-        job: jobId,
-      });
+  if (!application) {
+    throw new ErrorResponse("Application not found", 404);
+  }
 
+  // VERIFY OWNERSHIP
+  if (application.job.createdBy.toString() !== recruiterId.toString()) {
+    throw new ErrorResponse("Not authorized", 403);
+  }
 
-    if (existingApplication) {
+  // CURRENT STATUS
+  const currentStatus = application.status;
 
-      throw new ErrorResponse(
-        "Already applied to this job",
-        400,
-      );
-    }
+  // VALID TRANSITIONS
+  const allowedTransitions = VALID_STATUS_FLOW[currentStatus];
 
+  // INVALID FLOW
+  if (!allowedTransitions.includes(newStatus)) {
+    throw new ErrorResponse(
+      `Cannot move application from ${currentStatus} to ${newStatus}`,
 
-    // Fetch AI Match Cache
-    const matchCache =
-      await MatchCache.findOne({
-
-        student: studentId,
-
-        job: jobId,
-      });
-
-
-    // Create Application
-    const application =
-      await Application.create({
-
-        student: studentId,
-
-        job: jobId,
-
-        resumeUrl:
-          student.resumeUrl,
-
-
-
-        // AI Snapshot
-        matchScore:
-          matchCache?.score || 0,
-
-        matchedSkills:
-          matchCache?.matchedSkills || [],
-
-        missingSkills:
-          matchCache?.missingSkills || [],
-
-        aiSuggestion:
-          matchCache?.suggestion || "",
-      });
-
-
-    // Create Student Notification
-    await createNotification(
-
-      studentId,
-
-      `Successfully applied for ${job.title}`,
-
-      "APPLICATION",
-
-      jobId,
+      400,
     );
+  }
 
+  // UPDATE STATUS
+  application.status = newStatus;
 
-    return application;
-  };
+  await application.save();
 
+  // NOTIFICATION MESSAGE
+  let message = "";
 
+  let notificationType = "SYSTEM";
 
+  // SHORTLISTED
+  if (newStatus === "shortlisted") {
+    message = `You were shortlisted for ${application.job.title}`;
 
-// Get Logged-In Student Applications
-export const getMyApplications =
-  async (studentId) => {
+    notificationType = "SHORTLIST";
+  }
 
-    return await Application
-      .find({
+  // INTERVIEW
+  if (newStatus === "interview") {
+    message = `Interview round started for ${application.job.title}`;
 
-        student: studentId,
-      })
-      .populate("job")
-      .sort({
-        createdAt: -1,
-      });
-  };
+    notificationType = "INTERVIEW";
+  }
 
+  // SELECTED
+  if (newStatus === "selected") {
+    message = `Congratulations! You were selected for ${application.job.title}`;
 
+    notificationType = "SELECTED";
+  }
 
+  // REJECTED
+  if (newStatus === "rejected") {
+    message = `Your application was not selected for ${application.job.title}`;
 
-// Get Applicants For Recruiter Job
-export const getJobApplicants =
-  async (
-    jobId,
-    recruiterId,
-  ) => {
+    notificationType = "REJECT";
+  }
 
-    // Verify Job Ownership
-    const job =
-      await Job.findById(
-        jobId,
+  // CREATE NOTIFICATION
+  if (message) {
+    await createNotification(
+      application.student,
+
+      message,
+
+      notificationType,
+
+      application.job._id,
+    );
+  }
+
+  // SEND EMAIL
+  try {
+    const student = await User.findById(application.student);
+
+    if (student) {
+      const emailHtml = applicationStatusTemplate(
+        student.name,
+
+        application.job.company,
+
+        application.job.title,
+
+        newStatus,
       );
 
+      await sendEmail(
+        student.email,
 
-    if (!job) {
+        "InternPath Application Update",
 
-      throw new ErrorResponse(
-        "Job not found",
-        404,
+        emailHtml,
       );
     }
+  } catch (error) {
+    console.error(
+      "Application status email failed:",
 
+      error.message,
+    );
+  }
 
-    if (
-      job.createdBy.toString()
-      !== recruiterId.toString()
-    ) {
-
-      throw new ErrorResponse(
-        "Not authorized",
-        403,
-      );
-    }
-
-
-    return await Application
-      .find({
-        job: jobId,
-      })
-      .populate(
-        "student",
-        "name email skills resumeUrl",
-      )
-      .sort({
-        matchScore: -1,
-      });
-  };
-
-
-
-
-// Update Application Status
-export const updateApplicationStatus =
-  async (
-    applicationId,
-    recruiterId,
-    status,
-  ) => {
-
-    const application =
-      await Application
-        .findById(
-          applicationId,
-        )
-        .populate("job");
-
-
-    if (!application) {
-
-      throw new ErrorResponse(
-        "Application not found",
-        404,
-      );
-    }
-
-
-    // Verify Recruiter Owns Job
-    if (
-      application.job.createdBy.toString()
-      !== recruiterId.toString()
-    ) {
-
-      throw new ErrorResponse(
-        "Not authorized",
-        403,
-      );
-    }
-
-
-    // Update Status
-    application.status = status;
-
-    await application.save();
-
-
-    // Notification Message
-    let message = "";
-
-    let notificationType =
-      "SYSTEM";
-
-
-    if (
-      status === "shortlisted"
-    ) {
-
-      message =
-        `You were shortlisted for ${application.job.title}`;
-
-      notificationType =
-        "SHORTLIST";
-    }
-
-
-    if (
-      status === "rejected"
-    ) {
-
-      message =
-        `Your application was rejected for ${application.job.title}`;
-
-      notificationType =
-        "REJECT";
-    }
-
-
-    if (
-      status === "accepted"
-    ) {
-
-      message =
-        `You were accepted for ${application.job.title}`;
-
-      notificationType =
-        "SYSTEM";
-    }
-
-
-    // Create Notification
-    if (message) {
-
-      await createNotification(
-
-        application.student,
-
-        message,
-
-        notificationType,
-
-        application.job._id,
-      );
-    }
-
-
-    // Send Status Email
-    try {
-
-      const student =
-        await User.findById(
-          application.student
-        );
-
-
-      if (student) {
-
-        const emailHtml =
-          applicationStatusTemplate(
-
-            student.name,
-
-            application.job.company,
-
-            application.job.title,
-
-            status
-          );
-
-
-
-        await sendEmail(
-
-          student.email,
-
-          "InternPath Application Update",
-
-          emailHtml
-        );
-      }
-
-    } catch (error) {
-
-      console.error(
-
-        "Application status email failed:",
-
-        error.message
-      );
-    }
-
-
-    return application;
-  };
+  return application;
+};

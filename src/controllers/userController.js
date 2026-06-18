@@ -7,18 +7,15 @@ import {
 
   updateProfile,
 
-  getPublicProfile
+  getPublicProfile,
 
 } from "../services/userService.js";
 
 import {
-  successResponse
+  successResponse,
 } from "../utils/responseFormatter.js";
 
-
-
-
-// Get Current User Profile
+// GET CURRENT USER PROFILE
 export const getMe =
   asyncHandler(
 
@@ -42,10 +39,7 @@ export const getMe =
     }
   );
 
-
-
-
-// Update Current User Profile
+// UPDATE CURRENT USER PROFILE
 export const updateMe =
   asyncHandler(
 
@@ -72,10 +66,7 @@ export const updateMe =
     }
   );
 
-
-
-
-// Get Public User Profile
+// GET PUBLIC USER PROFILE
 export const getUserProfile =
   asyncHandler(
 

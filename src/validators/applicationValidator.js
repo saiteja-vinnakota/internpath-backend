@@ -6,30 +6,26 @@ import {
 } from "./commonValidator.js";
 
 
-
-
-// Apply To Job Schema
+// APPLY TO JOB
 export const applyJobSchema =
   z.object({
 
     params: z.object({
 
       jobId:
-        objectIdSchema
-    })
+        objectIdSchema,
+    }),
   });
 
 
-
-
-// Update Application Status
+// UPDATE APPLICATION STATUS
 export const updateApplicationStatusSchema =
   z.object({
 
     params: z.object({
 
       applicationId:
-        objectIdSchema
+        objectIdSchema,
     }),
 
     body: z.object({
@@ -37,13 +33,15 @@ export const updateApplicationStatusSchema =
       status:
         z.enum([
 
-          "pending",
+          "applied",
 
           "shortlisted",
 
-          "rejected",
+          "interview",
 
-          "accepted"
-        ])
-    })
+          "selected",
+
+          "rejected",
+        ]),
+    }),
   });
