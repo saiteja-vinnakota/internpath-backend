@@ -1,69 +1,54 @@
-import nodemailer from "nodemailer";
+import axios from "axios";
 
-// CREATE TRANSPORTER
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false,
-  requireTLS: true,
-  auth: {
-    user: process.env.BREVO_USER,
-    pass: process.env.BREVO_PASS,
-  },
-});
-
-// VERIFY SMTP CONNECTION ON SERVER START
-transporter.verify((error, success) => {
-  if (error) {
-    console.error(
-      "❌ Brevo SMTP Connection Error:",
-      error
-    );
-  } else {
-    console.log(
-      "✅ Brevo SMTP Ready"
-    );
-  }
-});
-
-// SEND EMAIL
 export const sendEmail = async (
   to,
   subject,
   html
 ) => {
   try {
+    const response =
+      await axios.post(
+        "https://api.brevo.com/v3/smtp/email",
+        {
+          sender: {
+            name: "InternPath",
+            email:
+              process.env.BREVO_FROM,
+          },
+          to: [
+            {
+              email: to,
+            },
+          ],
+          subject,
+          htmlContent: html,
+        },
+        {
+          headers: {
+            accept:
+              "application/json",
+            "api-key":
+              process.env.BREVO_API_KEY,
+            "content-type":
+              "application/json",
+          },
+          timeout: 30000,
+        }
+      );
+
     console.log(
-      `📧 Sending email to ${to}`
+      "Email sent:",
+      response.data
     );
 
-    const info =
-      await transporter.sendMail({
-        from: `"InternPath" <${process.env.BREVO_FROM}>`,
-        to,
-        subject,
-        html,
-        text: html.replace(
-          /<[^>]*>/g,
-          ""
-        ),
-      });
-
-    console.log(
-      "✅ Email Sent:",
-      info.messageId
-    );
-
-    return info;
+    return response.data;
   } catch (error) {
     console.error(
-      "❌ Email Send Error:",
-      error
+      "Brevo API Error:",
+      error.response?.data ||
+        error.message
     );
 
-    throw new Error(
-      error.message ||
-        "Failed to send email"
-    );
+    throw error;
   }
 };
