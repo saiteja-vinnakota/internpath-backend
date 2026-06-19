@@ -222,32 +222,32 @@ export const updateApplicationStatus = async (
 
   let notificationType = "SYSTEM";
 
+  // NOTIFICATION MESSAGE
+  let message = "";
+  let notificationType = "SYSTEM";
+
   // SHORTLISTED
   if (newStatus === "shortlisted") {
     message = `You were shortlisted for ${application.job.title}`;
-
-    notificationType = "SHORTLIST";
+    notificationType = "SHORTLISTED";
   }
 
   // INTERVIEW
-  if (newStatus === "interview") {
+  else if (newStatus === "interview") {
     message = `Interview round started for ${application.job.title}`;
-
     notificationType = "INTERVIEW";
   }
 
   // SELECTED
-  if (newStatus === "selected") {
+  else if (newStatus === "selected") {
     message = `Congratulations! You were selected for ${application.job.title}`;
-
     notificationType = "SELECTED";
   }
 
   // REJECTED
-  if (newStatus === "rejected") {
+  else if (newStatus === "rejected") {
     message = `Your application was not selected for ${application.job.title}`;
-
-    notificationType = "REJECT";
+    notificationType = "REJECTED";
   }
 
   // CREATE NOTIFICATION
