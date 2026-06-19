@@ -8,6 +8,10 @@ import MatchCache from "../models/MatchCache.js";
 
 import ErrorResponse from "../utils/errorResponse.js";
 
+import { APPLICATION_STATUS } from "../constants/applicationStatus.js";
+
+import { NOTIFICATION_TYPES } from "../constants/notificationTypes.js";
+
 import { createNotification } from "./notificationService.js";
 
 import { sendEmail } from "./emailService.js";
@@ -16,15 +20,24 @@ import applicationStatusTemplate from "../templates/emails/applicationStatusEmai
 
 // VALID STATUS TRANSITIONS
 const VALID_STATUS_FLOW = {
-  applied: ["shortlisted", "rejected"],
+  [APPLICATION_STATUS.APPLIED]: [
+    APPLICATION_STATUS.SHORTLISTED,
+    APPLICATION_STATUS.REJECTED,
+  ],
 
-  shortlisted: ["interview", "rejected"],
+  [APPLICATION_STATUS.SHORTLISTED]: [
+    APPLICATION_STATUS.INTERVIEW,
+    APPLICATION_STATUS.REJECTED,
+  ],
 
-  interview: ["selected", "rejected"],
+  [APPLICATION_STATUS.INTERVIEW]: [
+    APPLICATION_STATUS.SELECTED,
+    APPLICATION_STATUS.REJECTED,
+  ],
 
-  selected: [],
+  [APPLICATION_STATUS.SELECTED]: [],
 
-  rejected: [],
+  [APPLICATION_STATUS.REJECTED]: [],
 };
 
 // APPLY TO JOB
@@ -74,7 +87,7 @@ export const applyToJob = async (studentId, jobId) => {
 
     resumeUrl: student.resumeUrl,
 
-    status: "applied",
+    status: APPLICATION_STATUS.APPLIED,
 
     // AI SNAPSHOT
     matchScore: matchCache?.score || 0,
@@ -92,7 +105,7 @@ export const applyToJob = async (studentId, jobId) => {
 
     `Successfully applied for ${job.title}`,
 
-    "APPLICATION",
+    NOTIFICATION_TYPES.APPLICATION,
 
     jobId,
   );
@@ -220,31 +233,30 @@ export const updateApplicationStatus = async (
   // NOTIFICATION MESSAGE
   let message = "";
 
-  let notificationType = "SYSTEM";
-
+  let notificationType = NOTIFICATION_TYPES.SYSTEM;
 
   // SHORTLISTED
-  if (newStatus === "shortlisted") {
+  if (newStatus === APPLICATION_STATUS.SHORTLISTED) {
     message = `You were shortlisted for ${application.job.title}`;
-    notificationType = "SHORTLISTED";
+    notificationType = NOTIFICATION_TYPES.SHORTLISTED;
   }
 
   // INTERVIEW
-  else if (newStatus === "interview") {
+  else if (newStatus === APPLICATION_STATUS.INTERVIEW) {
     message = `Interview round started for ${application.job.title}`;
-    notificationType = "INTERVIEW";
+    notificationType = NOTIFICATION_TYPES.INTERVIEW;
   }
 
   // SELECTED
-  else if (newStatus === "selected") {
+  else if (newStatus === APPLICATION_STATUS.SELECTED) {
     message = `Congratulations! You were selected for ${application.job.title}`;
-    notificationType = "SELECTED";
+    notificationType = NOTIFICATION_TYPES.SELECTED;
   }
 
   // REJECTED
-  else if (newStatus === "rejected") {
+  else if (newStatus === APPLICATION_STATUS.REJECTED) {
     message = `Your application was not selected for ${application.job.title}`;
-    notificationType = "REJECTED";
+    notificationType = NOTIFICATION_TYPES.REJECTED;
   }
 
   // CREATE NOTIFICATION

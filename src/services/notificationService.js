@@ -1,105 +1,64 @@
-import Notification
-from "../models/Notification.js";
+import Notification from "../models/Notification.js";
 
-import {
-  getIO
-} from "../sockets/notificationSocket.js";
+import { getIO } from "../sockets/notificationSocket.js";
 
-
+import { NOTIFICATION_TYPES } from "../constants/notificationTypes.js";
 
 // Create Notification
-export const createNotification =
-  async (
-    userId,
+export const createNotification = async (
+  userId,
+  message,
+  type = NOTIFICATION_TYPES.SYSTEM,
+  jobId = null,
+) => {
+  const notification = await Notification.create({
+    user: userId,
+
     message,
-    type = "SYSTEM",
-    jobId = null
-  ) => {
 
-    const notification =
-      await Notification.create({
+    type,
 
-        user: userId,
+    job: jobId,
+  });
 
-        message,
+  // Emit Realtime Notification
+  try {
+    const io = getIO();
 
-        type,
+    io.to(userId.toString()).emit("new_notification", notification);
+  } catch (error) {
+    console.log("Socket emit skipped");
+  }
 
-        job: jobId
-      });
-
-
-    // Emit Realtime Notification
-    try {
-
-      const io = getIO();
-
-      io.to(userId.toString())
-        .emit(
-          "new_notification",
-          notification
-        );
-
-    } catch (error) {
-
-      console.log(
-        "Socket emit skipped"
-      );
-    }
-
-
-    return notification;
-  };
-
-
+  return notification;
+};
 
 // Get User Notifications
-export const getUserNotifications =
-  async (userId) => {
-
-    return await Notification
-      .find({
-        user: userId
-      })
-      .populate(
-        "job",
-        "title company"
-      )
-      .sort({
-        createdAt: -1
-      });
-  };
-
-
+export const getUserNotifications = async (userId) => {
+  return await Notification.find({
+    user: userId,
+  })
+    .populate("job", "title company")
+    .sort({
+      createdAt: -1,
+    });
+};
 
 // Mark Notification As Read
-export const markNotificationAsRead =
-  async (
-    notificationId,
-    userId
-  ) => {
+export const markNotificationAsRead = async (notificationId, userId) => {
+  const notification = await Notification.findOne({
+    _id: notificationId,
 
-    const notification =
-      await Notification.findOne({
+    user: userId,
+  });
 
-        _id: notificationId,
+  if (!notification) {
+    throw new Error("Notification not found");
+  }
 
-        user: userId
-      });
+  notification.isRead = true;
 
+  await notification.save();
 
-    if (!notification) {
-
-      throw new Error(
-        "Notification not found"
-      );
-    }
-
-
-    notification.isRead = true;
-
-    await notification.save();
-
-
-    return notification;
-  };
+  return notification;
+};

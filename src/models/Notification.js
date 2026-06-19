@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+import { NOTIFICATION_TYPES } from "../constants/notificationTypes.js";
+
 const notificationSchema = new mongoose.Schema(
   {
     // Receiver User
@@ -20,23 +22,9 @@ const notificationSchema = new mongoose.Schema(
     // Notification Type
     type: {
       type: String,
-      enum: [
-        "APPLICATION",
+      enum: Object.values(NOTIFICATION_TYPES),
 
-        "SHORTLISTED",
-
-        "INTERVIEW",
-
-        "SELECTED",
-
-        "REJECTED",
-
-        "JOB",
-
-        "SYSTEM",
-      ],
-
-      default: "SYSTEM",
+      default: NOTIFICATION_TYPES.SYSTEM,
     },
 
     // Related Job
