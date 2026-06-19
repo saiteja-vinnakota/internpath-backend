@@ -222,9 +222,6 @@ export const updateApplicationStatus = async (
 
   let notificationType = "SYSTEM";
 
-  // NOTIFICATION MESSAGE
-  let message = "";
-  let notificationType = "SYSTEM";
 
   // SHORTLISTED
   if (newStatus === "shortlisted") {
