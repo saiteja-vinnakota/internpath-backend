@@ -1,78 +1,72 @@
 import express from "express";
 
 import {
-
   getMe,
-
   updateMe,
-
-  getUserProfile
-
+  getUserProfile,
+  uploadProfilePicture,
 } from "../controllers/userController.js";
 
-import {
-  protect
-} from "../middleware/authMiddleware.js";
+import { protect } from "../middleware/authMiddleware.js";
 
-import validate
-from "../middleware/validateMiddleware.js";
+import authorizeRoles from "../middleware/roleMiddleware.js";
 
-import {
-  idParamsSchema
-} from "../validators/commonValidator.js";
+import validate from "../middleware/validateMiddleware.js";
 
-import {
-  updateProfileSchema
-} from "../validators/userValidator.js";
+import imageUpload from "../middleware/imageUploadMiddleware.js";
 
+import { validateProfilePictureUpload } from "../validators/profileValidator.js";
 
-const router =
-  express.Router();
+import { idParamsSchema } from "../validators/commonValidator.js";
 
+import { updateProfileSchema } from "../validators/userValidator.js";
 
+import { ROLES } from "../constants/roles.js";
 
+const router = express.Router();
 
 // Current Logged-In User
 router.get(
-
   "/me",
 
   protect,
 
-  getMe
+  getMe,
 );
-
-
-
 
 // Update Logged-In User
 router.put(
-
   "/me",
 
   protect,
 
-  validate(
-    updateProfileSchema
-  ),
+  validate(updateProfileSchema),
 
-  updateMe
+  updateMe,
 );
-
-
-
 
 // Public User Profile
 router.get(
-
   "/:id",
 
-  validate(
-    idParamsSchema
-  ),
+  validate(idParamsSchema),
 
-  getUserProfile
+  getUserProfile,
 );
 
+// Upload Profile Picture
+router.post(
+  "/upload-profile-picture",
+
+  protect,
+
+  authorizeRoles(ROLES.STUDENT, ROLES.RECRUITER),
+
+  imageUpload.single("profilePicture"),
+
+  validateProfilePictureUpload,
+
+  uploadProfilePicture,
+);
 
 export default router;

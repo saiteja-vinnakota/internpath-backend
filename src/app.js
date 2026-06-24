@@ -10,128 +10,64 @@ import morgan from "morgan";
 
 import routes from "./routes/index.js";
 
-import notFoundMiddleware
-from "./middleware/notFoundMiddleware.js";
+import notFoundMiddleware from "./middleware/notFoundMiddleware.js";
 
-import errorMiddleware
-from "./middleware/errorMiddleware.js";
+import errorMiddleware from "./middleware/errorMiddleware.js";
 
-import apiLimiter
-from "./middleware/rateLimiter.js";
+import apiLimiter from "./middleware/rateLimiter.js";
 
-
-const app =  express();
-
-
-
+const app = express();
 
 // Security Headers
-app.use(
-  helmet()
-);
-
-
-
+app.use(helmet());
 
 // Rate Limiting
-app.use(
-  apiLimiter
-);
-
-
-
+app.use(apiLimiter);
 
 // Compression
-app.use(
-  compression()
-);
-
-
-
+app.use(compression());
 
 // Logging
-app.use(
-  morgan("dev")
-);
-
-
-
+app.use(morgan("dev"));
 
 // CORS
 app.use(
-
   cors({
+    origin: [process.env.CLIENT_URL, "http://localhost:5173"],
 
-    origin: [
-
-      process.env.CLIENT_URL,
-
-      "http://localhost:5173"
-    ],
-
-    credentials: true
-  })
+    credentials: true,
+  }),
 );
-
-
 
 // Body Parser
-app.use(
-  express.json()
-);
+app.use(express.json());
 
 app.use(
-
   express.urlencoded({
-
-    extended: true
-  })
+    extended: true,
+  }),
 );
-
-
-
 
 // Health Check
 app.get(
-
   "/",
 
   (req, res) => {
-
     res.status(200).json({
-
       success: true,
 
-      message:
-        "InternPath API Running Successfully"
+      message: "InternPath API Running Successfully",
     });
-  }
+  },
 );
-
-
-
 
 // API Routes
-app.use(
-  "/api",
-  routes
-);
-
-
-
+app.use("/api", routes);
 
 // Not Found Middleware
-app.use(
-  notFoundMiddleware
-);
-
-
-
+app.use(notFoundMiddleware);
 
 // Global Error Middleware
-app.use(
-  errorMiddleware
-);
-
+app.use(errorMiddleware);
 
 export default app;
