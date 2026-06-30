@@ -87,7 +87,7 @@ export const updateProfile = async (userId, updateData) => {
 export const getPublicProfile = async (userId) => {
   const user = await User.findById(userId)
 
-    .select("-password -email -profilePicture");
+    .select("-password -email");
 
   if (!user) {
     throw new ErrorResponse("User not found", 404);

@@ -1,105 +1,27 @@
 import mongoose from "mongoose";
 
-
-const matchCacheSchema =
-  new mongoose.Schema(
-    {
-
-      // Student
-      student: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-        index: true
-      },
-
-
-
-      // Job
-      job: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Job",
-        required: true,
-        index: true
-      },
-
-
-
-      // AI Match Score
-      score: {
-        type: Number,
-        required: true,
-        min: 0,
-        max: 100
-      },
-
-
-
-      // Matched Skills
-      matchedSkills: {
-        type: [String],
-        default: []
-      },
-
-
-
-      // Missing Skills
-      missingSkills: {
-        type: [String],
-        default: []
-      },
-
-
-
-      // AI Suggestion
-      suggestion: {
-        type: String,
-        default: ""
-      },
-
-
-
-      // Resume Version
-      resumeVersion: {
-        type: Number,
-        default: 1
-      }
-
-    },
-    {
-      timestamps: true
-    }
-  );
-
-
-
-
-// Prevent Duplicate Cache Entries
-matchCacheSchema.index(
+const matchCacheSchema = new mongoose.Schema(
   {
-    student: 1,
-    job: 1
+    student: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    job:     { type: mongoose.Schema.Types.ObjectId, ref: "Job",  required: true, index: true },
+
+    score: { type: Number, required: true, min: 0, max: 100 },
+
+    matchedSkills: { type: [String], default: [] },
+    missingSkills: { type: [String], default: [] },
+
+    // NEW — added for the improved prompt's "strengths" field
+    strengths: { type: [String], default: [] },
+
+    suggestion: { type: String, default: "" },
+
+    resumeVersion: { type: Number, default: 1 },
   },
-  {
-    unique: true
-  }
+  { timestamps: true }
 );
 
+matchCacheSchema.index({ student: 1, job: 1 }, { unique: true });
+matchCacheSchema.index({ score: -1 });
 
-
-
-// Faster Recruiter Sorting
-matchCacheSchema.index({
-  score: -1
-});
-
-
-
-
-const MatchCache =
-  mongoose.model(
-    "MatchCache",
-    matchCacheSchema
-  );
-
+const MatchCache = mongoose.model("MatchCache", matchCacheSchema);
 export default MatchCache;

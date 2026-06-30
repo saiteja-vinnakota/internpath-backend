@@ -18,6 +18,7 @@ import { sendEmail } from "./emailService.js";
 
 import applicationStatusTemplate from "../templates/emails/applicationStatusEmail.js";
 
+
 // VALID STATUS TRANSITIONS
 const VALID_STATUS_FLOW = {
   [APPLICATION_STATUS.APPLIED]: [
@@ -42,73 +43,35 @@ const VALID_STATUS_FLOW = {
 
 // APPLY TO JOB
 export const applyToJob = async (studentId, jobId) => {
-  // CHECK JOB
-  const job = await Job.findById(jobId);
+ 
+  const cachedMatch = await MatchCache.findOne({ student: studentId, job: jobId });
 
-  if (!job) {
-    throw new ErrorResponse("Job not found", 404);
+  if (!cachedMatch) {
+    const error = new ErrorResponse(
+      "Please check your AI match score before applying to this internship",
+      400
+    );
+    error.code = "MATCH_SCORE_REQUIRED"; 
+    throw error;
   }
 
-  // CHECK STUDENT
-  const student = await User.findById(studentId);
-
-  if (!student) {
-    throw new ErrorResponse("Student not found", 404);
+  // 2. Prevent duplicate applications
+  const existing = await Application.findOne({ student: studentId, job: jobId });
+  if (existing) {
+    throw new ErrorResponse("You have already applied to this internship", 400);
   }
 
-  // RESUME REQUIRED
-  if (!student.resumeUrl) {
-    throw new ErrorResponse("Upload resume before applying", 400);
-  }
-
-  // PREVENT DUPLICATE
-  const existingApplication = await Application.findOne({
-    student: studentId,
-
-    job: jobId,
-  });
-
-  if (existingApplication) {
-    throw new ErrorResponse("Already applied to this internship", 400);
-  }
-
-  // AI CACHE
-  const matchCache = await MatchCache.findOne({
-    student: studentId,
-
-    job: jobId,
-  });
-
-  // CREATE APPLICATION
+  // 3. Create the application with the server-verified score —
+  //    matchScore is NEVER taken from request body, so it can't be spoofed
+  //    and every recruiter sees a number computed the same way.
   const application = await Application.create({
     student: studentId,
-
     job: jobId,
-
-    resumeUrl: student.resumeUrl,
-
-    status: APPLICATION_STATUS.APPLIED,
-
-    // AI SNAPSHOT
-    matchScore: matchCache?.score || 0,
-
-    matchedSkills: matchCache?.matchedSkills || [],
-
-    missingSkills: matchCache?.missingSkills || [],
-
-    aiSuggestion: matchCache?.suggestion || "",
+    matchScore: cachedMatch.score,
+    matchedSkills: cachedMatch.matchedSkills,
+    missingSkills: cachedMatch.missingSkills,
+    status: "applied",
   });
-
-  // NOTIFICATION
-  await createNotification(
-    studentId,
-
-    `Successfully applied for ${job.title}`,
-
-    NOTIFICATION_TYPES.APPLICATION,
-
-    jobId,
-  );
 
   return application;
 };
