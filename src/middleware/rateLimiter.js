@@ -11,7 +11,7 @@ export const apiLimiter =
     windowMs:
       15 * 60 * 1000,
 
-    max: 100,
+    max: 1000,
 
     message: {
 
